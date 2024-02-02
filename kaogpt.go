@@ -5,13 +5,22 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"time"
 
+	"github.com/go-resty/resty/v2"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 var bot *tgbotapi.BotAPI
 var chatId int64
+
+type Tokens struct {
+	Telegram string
+	Gpt      string
+}
+
+const (
+	apiEndpoint = "https://api.openai.com/v1/chat/completions"
+)
 
 func connectWithTelegram() {
 	var TOKEN = getTelegramToken()
@@ -29,40 +38,70 @@ func sendMessage(msg string) {
 
 func sendAnswer(update *tgbotapi.Update) {
 	waitMsg := tgbotapi.NewMessage(chatId, getWaitAnswer())
-	msg := tgbotapi.NewMessage(chatId, getGptAnswer())
-	msg.ReplyToMessageID = update.Message.MessageID
+	waitMsg.ReplyToMessageID = update.Message.MessageID
 	bot.Send(waitMsg)
-	time.Sleep(2 * time.Second)
+	msg := tgbotapi.NewMessage(chatId, getGptAnswer(update))
+	msg.ReplyToMessageID = update.Message.MessageID
 	bot.Send(msg)
 }
 
-func getGptAnswer() string {
-	return "Hello from GPT chat!"
+func getGptAnswer(update *tgbotapi.Update) string {
+	apiKey := getGPTToken()
+	client := resty.New()
+
+	response, err := client.R().
+		SetAuthToken(apiKey).
+		SetHeader("Content-Type", "application/json").
+		SetBody(map[string]interface{}{
+			"model":      "gpt-3.5-turbo",
+			"messages":   []interface{}{map[string]interface{}{"role": "system", "content": update.Message.Text}},
+			"max_tokens": 500,
+		}).
+		Post(apiEndpoint)
+
+	if err != nil {
+		log.Fatalf("Error while sending send the request: %v", err)
+	}
+
+	body := response.Body()
+
+	var data map[string]interface{}
+	err = json.Unmarshal(body, &data)
+	if err != nil {
+		return "Error while decoding JSON response:" + err.Error()
+	}
+
+	content := data["choices"].([]interface{})[0].(map[string]interface{})["message"].(map[string]interface{})["content"].(string)
+	return content
 }
 
 func getWaitAnswer() string {
 	return "Wait your answer is prepearing"
 }
 
-type TokenData struct {
-	Token string
+func getTelegramToken() string {
+	tokens := readJsonTokens()
+	return tokens.Telegram
 }
 
-func getTelegramToken() string {
+func getGPTToken() string {
+	tokens := readJsonTokens()
+	return tokens.Gpt
+}
+
+func readJsonTokens() Tokens {
 	// read file
-	data, err := os.ReadFile("./token/tgtoken.json")
+	jsonData, err := os.ReadFile("./token/tokens.json")
 	if err != nil {
 		fmt.Print(err)
 	}
+	var payload Tokens
 
-	// Now let's unmarshall the data into `payload`
-	var payload TokenData
-	err = json.Unmarshal(data, &payload)
+	err = json.Unmarshal(jsonData, &payload)
 	if err != nil {
 		log.Fatal("Error during Unmarshal(): ", err)
 	}
-
-	return payload.Token
+	return payload
 }
 
 func isMessageRequestForGPT(update *tgbotapi.Update) bool {
@@ -84,7 +123,6 @@ func main() {
 		}
 
 		if isMessageRequestForGPT(&update) {
-
 			sendAnswer(&update)
 		}
 	}
