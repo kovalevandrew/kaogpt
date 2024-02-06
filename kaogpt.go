@@ -3,8 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"os"
+	"strings"
 
 	"github.com/go-resty/resty/v2"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -16,10 +19,22 @@ var chatId int64
 type Tokens struct {
 	Telegram string
 	Gpt      string
+	Edenai   string
+}
+
+type ImageEdenai struct {
+	Replicate struct {
+		Items []struct {
+			Image            string `json:"image"`
+			ImageResourceUrl string `json:"image_resource_url"`
+		} `json:"items"`
+		Status string `json:"status"`
+	} `json:"replicate"`
 }
 
 const (
-	apiEndpoint = "https://api.openai.com/v1/chat/completions"
+	apiEndpoint    = "https://api.openai.com/v1/chat/completions"
+	edenaiEndpoint = "https://api.edenai.run/v2/image/generation"
 )
 
 func connectWithTelegram() {
@@ -41,6 +56,15 @@ func sendAnswer(update *tgbotapi.Update) {
 	waitMsg.ReplyToMessageID = update.Message.MessageID
 	bot.Send(waitMsg)
 	msg := tgbotapi.NewMessage(chatId, getGptAnswer(update))
+	msg.ReplyToMessageID = update.Message.MessageID
+	bot.Send(msg)
+}
+
+func sendPicture(update *tgbotapi.Update) {
+	waitMsg := tgbotapi.NewMessage(chatId, getImageWaitAnswer())
+	waitMsg.ReplyToMessageID = update.Message.MessageID
+	bot.Send(waitMsg)
+	msg := tgbotapi.NewMessage(chatId, getEdenaiImage(update))
 	msg.ReplyToMessageID = update.Message.MessageID
 	bot.Send(msg)
 }
@@ -75,8 +99,32 @@ func getGptAnswer(update *tgbotapi.Update) string {
 	return content
 }
 
+func getEdenaiImage(update *tgbotapi.Update) string {
+	payload := strings.NewReader("{\"response_as_dict\":true,\"attributes_as_list\":false,\"show_original_response\":false,\"resolution\":\"1024x1024\",\"num_images\":1,\"text\":\"" + update.Message.Text + "\",\"providers\":\"replicate\"}")
+	req, _ := http.NewRequest("POST", edenaiEndpoint, payload)
+
+	req.Header.Add("accept", "application/json")
+	req.Header.Add("content-type", "application/json")
+	req.Header.Add("authorization", "Bearer "+getEdenaiToken()+"")
+
+	res, _ := http.DefaultClient.Do(req)
+
+	defer res.Body.Close()
+	body, _ := io.ReadAll(res.Body)
+	var result ImageEdenai
+	if err := json.Unmarshal(body, &result); err != nil { // Parse []byte to go struct pointer
+		fmt.Println("Can not unmarshal JSON")
+	}
+
+	return result.Replicate.Items[0].ImageResourceUrl
+}
+
 func getWaitAnswer() string {
 	return "Wait your answer is prepearing"
+}
+
+func getImageWaitAnswer() string {
+	return "Wait your image is generating"
 }
 
 func getTelegramToken() string {
@@ -87,6 +135,11 @@ func getTelegramToken() string {
 func getGPTToken() string {
 	tokens := readJsonTokens()
 	return tokens.Gpt
+}
+
+func getEdenaiToken() string {
+	tokens := readJsonTokens()
+	return tokens.Edenai
 }
 
 func readJsonTokens() Tokens {
@@ -111,6 +164,13 @@ func isMessageRequestForGPT(update *tgbotapi.Update) bool {
 
 	return true
 }
+func isMessageRequestForEdenai(update *tgbotapi.Update) bool {
+	if strings.Contains(update.Message.Text, "generat") {
+		return true
+	}
+
+	return false
+}
 
 func main() {
 	connectWithTelegram()
@@ -119,9 +179,11 @@ func main() {
 	for update := range bot.GetUpdatesChan(updateConfig) {
 		if update.Message != nil && update.Message.Text == "/start" {
 			chatId = update.Message.Chat.ID
-			sendMessage("Ask you question here and chatGPT will respond")
+			sendMessage("If you want get image type \"generate\" firstly, or ask your question and ai will respons to you.")
 		}
-
+		if isMessageRequestForEdenai(&update) {
+			sendAnswer(&update)
+		}
 		if isMessageRequestForGPT(&update) {
 			sendAnswer(&update)
 		}
