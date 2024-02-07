@@ -1,7 +1,6 @@
 package main
 
 import (
-	"kaogpt/api"
 	"kaogpt/config"
 	"kaogpt/di"
 	"kaogpt/service"
@@ -12,17 +11,22 @@ func main() {
 	// Read configuration
 	tokens := config.ReadJsonTokens()
 
-	di.NewRestyClient()
-
-	// Initialize Telegram bot
+	// Initialize dependencies
+	restyClient := di.NewRestyClient()
 	telegramBot, err := di.NewTelegramBotClient(tokens.Telegram)
 	if err != nil {
 		log.Fatalf("Error initializing Telegram bot: %v", err)
 	}
-	service.InitTelegramBot(telegramBot)
 
-	// Start API server
-	go api.StartBot()
+	// Initialize services
+	chatGPTService := service.NewChatGPTService(restyClient)
+	edenaiService := service.NewEdenaiService()
+
+	// Initialize Telegram service
+	telegramService := service.NewTelegramService(telegramBot, chatGPTService, edenaiService)
+
+	// Start Telegram service
+	telegramService.Start()
 
 	// Run indefinitely
 	select {}
