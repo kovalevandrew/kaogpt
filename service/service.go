@@ -32,14 +32,6 @@ type ImageEdenai struct {
 	} `json:"replicate"`
 }
 
-type TelegramBotService struct {
-	Bot         *tgbotapi.BotAPI
-	RestyClient *resty.Client
-	TelegramKey string
-	GptKey      string
-	EdenaiKey   string
-}
-
 type GPTResponse struct {
 	Choices []Choice `json:"choices"`
 }
@@ -50,16 +42,6 @@ type Choice struct {
 
 type Message struct {
 	Content string `json:"content"`
-}
-
-func NewTelegramBotService(bot *tgbotapi.BotAPI, restyClient *resty.Client, telegramKey, gptKey, edenaiKey string) *TelegramBotService {
-	return &TelegramBotService{
-		Bot:         bot,
-		RestyClient: restyClient,
-		TelegramKey: telegramKey,
-		GptKey:      gptKey,
-		EdenaiKey:   edenaiKey,
-	}
 }
 
 func GetWaitAnswer() string {

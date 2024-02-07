@@ -1,4 +1,3 @@
-// api/handlers.go
 package api
 
 import (
@@ -19,9 +18,7 @@ func StartBot() {
 		}
 		if isMessageRequestForEdenai(&update) {
 			SendPicture(&update)
-			return
-		}
-		if isMessageRequestForGPT(&update) {
+		} else if isMessageRequestForGPT(&update) {
 			SendAnswer(&update)
 		}
 	}

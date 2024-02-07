@@ -26,7 +26,4 @@ func main() {
 
 	// Run indefinitely
 	select {}
-
-	// Run tests
-	// tests.RunTests()
 }
