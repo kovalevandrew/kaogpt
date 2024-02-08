@@ -8,10 +8,6 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
-type AnswerService interface {
-	GetAnswer(message string) (string, error)
-}
-
 type ChatGPTService struct {
 	apiEndpoint string
 	restyClient *resty.Client
