@@ -8,6 +8,10 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
+type AnswerService interface {
+	GetAnswer(message string) (string, error)
+}
+
 type ChatGPTService struct {
 	apiEndpoint string
 	restyClient *resty.Client
@@ -43,7 +47,7 @@ func NewChatGPTService(restyClient *resty.Client) *ChatGPTService {
 	}
 }
 
-func (cs *ChatGPTService) GetGptAnswer(message string) (string, error) {
+func (cs *ChatGPTService) GetAnswer(message string) (string, error) {
 	apiKey := config.GetGPTToken()
 	requestBody := GPTRequest{
 		Model:     "gpt-3.5-turbo",
