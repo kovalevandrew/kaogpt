@@ -1,6 +1,7 @@
 package service
 
 import (
+	"kaogpt/config"
 	"log"
 	"strings"
 
@@ -13,12 +14,21 @@ type TelegramService struct {
 	edenaiService  *EdenaiService
 }
 
-func NewTelegramService(bot *tgbotapi.BotAPI, chatGPTService *ChatGPTService, edenaiService *EdenaiService) *TelegramService {
+func NewTelegramService(chatGPTService *ChatGPTService, edenaiService *EdenaiService) *TelegramService {
+	telegramBot, err := NewTelegramBotClient()
+	if err != nil {
+		log.Fatalf("Error initializing Telegram bot: %v", err)
+	}
 	return &TelegramService{
-		bot:            bot,
+		bot:            telegramBot,
 		chatGPTService: chatGPTService,
 		edenaiService:  edenaiService,
 	}
+}
+
+func NewTelegramBotClient() (*tgbotapi.BotAPI, error) {
+	tokens := config.ReadJsonTokens()
+	return tgbotapi.NewBotAPI(tokens.Telegram)
 }
 
 func (t *TelegramService) Start() {
@@ -49,12 +59,12 @@ func (t *TelegramService) SendMessage(msg string, chatID int64) error {
 }
 
 func (t *TelegramService) sendAnswer(update *tgbotapi.Update) error {
-	answer, err := t.chatGPTService.GetGptAnswer(update.Message.Text)
-	if err != nil {
-		return err
-	}
 	chatID := update.Message.Chat.ID
 	if err := t.SendMessage(GetWaitAnswer(), chatID); err != nil {
+		return err
+	}
+	answer, err := t.chatGPTService.GetGptAnswer(update.Message.Text)
+	if err != nil {
 		return err
 	}
 	if err := t.SendMessage(answer, chatID); err != nil {
@@ -64,12 +74,12 @@ func (t *TelegramService) sendAnswer(update *tgbotapi.Update) error {
 }
 
 func (t *TelegramService) sendPicture(update *tgbotapi.Update) error {
-	imageURL, err := t.edenaiService.GetEdenaiImage(update.Message.Text)
-	if err != nil {
-		return err
-	}
 	chatID := update.Message.Chat.ID
 	if err := t.SendMessage(GetImageWaitAnswer(), chatID); err != nil {
+		return err
+	}
+	imageURL, err := t.edenaiService.GetEdenaiImage(update.Message.Text)
+	if err != nil {
 		return err
 	}
 	if err := t.SendMessage(imageURL, chatID); err != nil {

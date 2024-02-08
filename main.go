@@ -1,31 +1,18 @@
 package main
 
 import (
-	"kaogpt/config"
-	"kaogpt/di"
 	"kaogpt/service"
-	"log"
+
+	"github.com/go-resty/resty/v2"
 )
 
 func main() {
-	// Read configuration
-	tokens := config.ReadJsonTokens()
+	restyClient := resty.New()
 
-	// Initialize dependencies
-	restyClient := di.NewRestyClient()
-	telegramBot, err := di.NewTelegramBotClient(tokens.Telegram)
-	if err != nil {
-		log.Fatalf("Error initializing Telegram bot: %v", err)
-	}
-
-	// Initialize services
 	chatGPTService := service.NewChatGPTService(restyClient)
-	edenaiService := service.NewEdenaiService()
+	edenaiService := service.NewEdenaiService(restyClient)
+	telegramService := service.NewTelegramService(chatGPTService, edenaiService)
 
-	// Initialize Telegram service
-	telegramService := service.NewTelegramService(telegramBot, chatGPTService, edenaiService)
-
-	// Start Telegram service
 	telegramService.Start()
 
 	// Run indefinitely
