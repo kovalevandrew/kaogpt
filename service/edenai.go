@@ -31,7 +31,7 @@ func NewEdenaiService(restyClient *resty.Client) *EdenaiService {
 	}
 }
 
-func (es *EdenaiService) GetEdenaiImage(message string) (string, error) {
+func (es *EdenaiService) GetAnswer(message string) (string, error) {
 	payload := strings.NewReader(fmt.Sprintf(`{"response_as_dict":true,"attributes_as_list":false,"show_original_response":false,"resolution":"1024x1024","num_images":1,"text":"%s","providers":"replicate"}`, message))
 	response, err := es.restyClient.R().
 		SetHeader("Content-Type", "application/json").

@@ -63,7 +63,7 @@ func (t *TelegramService) sendAnswer(update *tgbotapi.Update) error {
 	if err := t.SendMessage(GetWaitAnswer(), chatID); err != nil {
 		return err
 	}
-	answer, err := t.chatGPTService.GetGptAnswer(update.Message.Text)
+	answer, err := t.chatGPTService.GetAnswer(update.Message.Text)
 	if err != nil {
 		return err
 	}
@@ -78,7 +78,7 @@ func (t *TelegramService) sendPicture(update *tgbotapi.Update) error {
 	if err := t.SendMessage(GetImageWaitAnswer(), chatID); err != nil {
 		return err
 	}
-	imageURL, err := t.edenaiService.GetEdenaiImage(update.Message.Text)
+	imageURL, err := t.edenaiService.GetAnswer(update.Message.Text)
 	if err != nil {
 		return err
 	}
