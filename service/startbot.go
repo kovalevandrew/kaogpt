@@ -8,13 +8,17 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-type TelegramService struct {
-	bot            *tgbotapi.BotAPI
-	chatGPTService *ChatGPTService
-	edenaiService  *EdenaiService
+type AnswerService interface {
+	GetAnswer(message string) (string, error)
 }
 
-func NewTelegramService(chatGPTService *ChatGPTService, edenaiService *EdenaiService) *TelegramService {
+type TelegramService struct {
+	bot            *tgbotapi.BotAPI
+	chatGPTService AnswerService
+	edenaiService  AnswerService
+}
+
+func NewTelegramService(chatGPTService AnswerService, edenaiService AnswerService) *TelegramService {
 	telegramBot, err := NewTelegramBotClient()
 	if err != nil {
 		log.Fatalf("Error initializing Telegram bot: %v", err)
@@ -63,7 +67,7 @@ func (t *TelegramService) sendAnswer(update *tgbotapi.Update) error {
 	if err := t.SendMessage(GetWaitAnswer(), chatID); err != nil {
 		return err
 	}
-	answer, err := t.chatGPTService.GetGptAnswer(update.Message.Text)
+	answer, err := t.chatGPTService.GetAnswer(update.Message.Text)
 	if err != nil {
 		return err
 	}
@@ -78,7 +82,7 @@ func (t *TelegramService) sendPicture(update *tgbotapi.Update) error {
 	if err := t.SendMessage(GetImageWaitAnswer(), chatID); err != nil {
 		return err
 	}
-	imageURL, err := t.edenaiService.GetEdenaiImage(update.Message.Text)
+	imageURL, err := t.edenaiService.GetAnswer(update.Message.Text)
 	if err != nil {
 		return err
 	}

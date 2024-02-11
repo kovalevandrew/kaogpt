@@ -43,7 +43,7 @@ func NewChatGPTService(restyClient *resty.Client) *ChatGPTService {
 	}
 }
 
-func (cs *ChatGPTService) GetGptAnswer(message string) (string, error) {
+func (cs *ChatGPTService) GetAnswer(message string) (string, error) {
 	apiKey := config.GetGPTToken()
 	requestBody := GPTRequest{
 		Model:     "gpt-3.5-turbo",
