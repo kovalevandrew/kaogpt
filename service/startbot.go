@@ -9,7 +9,7 @@ import (
 )
 
 type AnswerService interface {
-	GetAnswer(message string) (string, error)
+	GetAnswer(message string, token string) (string, error)
 }
 
 type TelegramService struct {
@@ -63,11 +63,12 @@ func (t *TelegramService) SendMessage(msg string, chatID int64) error {
 }
 
 func (t *TelegramService) sendAnswer(update *tgbotapi.Update) error {
+	token := config.GetGPTToken()
 	chatID := update.Message.Chat.ID
 	if err := t.SendMessage(GetWaitAnswer(), chatID); err != nil {
 		return err
 	}
-	answer, err := t.chatGPTService.GetAnswer(update.Message.Text)
+	answer, err := t.chatGPTService.GetAnswer(update.Message.Text, token)
 	if err != nil {
 		return err
 	}
@@ -78,11 +79,12 @@ func (t *TelegramService) sendAnswer(update *tgbotapi.Update) error {
 }
 
 func (t *TelegramService) sendPicture(update *tgbotapi.Update) error {
+	token := config.GetEdenaiToken()
 	chatID := update.Message.Chat.ID
 	if err := t.SendMessage(GetImageWaitAnswer(), chatID); err != nil {
 		return err
 	}
-	imageURL, err := t.edenaiService.GetAnswer(update.Message.Text)
+	imageURL, err := t.edenaiService.GetAnswer(update.Message.Text, token)
 	if err != nil {
 		return err
 	}

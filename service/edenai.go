@@ -3,7 +3,6 @@ package service
 import (
 	"encoding/json"
 	"fmt"
-	"kaogpt/config"
 	"strings"
 )
 
@@ -29,10 +28,9 @@ func NewEdenaiService(restService RESTService) *EdenaiService {
 	}
 }
 
-func (es *EdenaiService) GetAnswer(message string) (string, error) {
-	apiKey := config.GetEdenaiToken()
+func (es *EdenaiService) GetAnswer(message string, token string) (string, error) {
 	payload := strings.NewReader(fmt.Sprintf(`{"response_as_dict":true,"attributes_as_list":false,"show_original_response":false,"resolution":"1024x1024","num_images":1,"text":"%s","providers":"replicate"}`, message))
-	response, err := es.restService.Post(es.endpoint, apiKey, payload)
+	response, err := es.restService.Post(es.endpoint, token, payload)
 	if err != nil {
 		return "", fmt.Errorf("error sending request to Edenai API: %v", err)
 	}

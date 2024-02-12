@@ -3,7 +3,6 @@ package service
 import (
 	"encoding/json"
 	"fmt"
-	"kaogpt/config"
 )
 
 type ChatGPTService struct {
@@ -41,15 +40,14 @@ func NewChatGPTService(restService RESTService) *ChatGPTService {
 	}
 }
 
-func (cs *ChatGPTService) GetAnswer(message string) (string, error) {
-	apiKey := config.GetGPTToken()
+func (cs *ChatGPTService) GetAnswer(message string, token string) (string, error) {
 	requestBody := GPTRequest{
 		Model:     "gpt-3.5-turbo",
 		Messages:  []MessageItem{{Role: "system", Content: message}},
 		MaxTokens: 500,
 	}
 
-	response, err := cs.restService.Post(cs.apiEndpoint, apiKey, requestBody)
+	response, err := cs.restService.Post(cs.apiEndpoint, token, requestBody)
 	if err != nil {
 		return "", fmt.Errorf("error while sending the request: %v", err)
 	}
