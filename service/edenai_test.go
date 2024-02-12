@@ -3,6 +3,8 @@ package service
 import (
 	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetAnswerEdenai(t *testing.T) {
@@ -20,17 +22,11 @@ func TestGetAnswerEdenai(t *testing.T) {
 	expectedURL := "mock_resource_url"
 	message := "Test message"
 	imageURL, err := edenaiService.GetAnswer(message, token)
-	if err != nil {
-		t.Errorf("GetAnswer returned error: %v", err)
-	}
-	if imageURL != expectedURL {
-		t.Errorf("GetAnswer returned %q, expected %q", imageURL, expectedURL)
-	}
+	assert.NoError(t, err, "GetAnswer returned an unexpected error")
+	assert.Equal(t, expectedURL, imageURL, "GetAnswer returned an unexpected imageURL")
 
 	// Test case: Error returned from mock service
 	mockRestyService.Err = fmt.Errorf("Mock error")
 	_, err = edenaiService.GetAnswer(message, token)
-	if err == nil {
-		t.Error("Expected error, got nil")
-	}
+	assert.Error(t, err, "Expected an error from GetAnswer")
 }

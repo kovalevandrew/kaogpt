@@ -3,34 +3,26 @@ package service
 import (
 	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetAnswerGpt(t *testing.T) {
-	token := "moked token for gpt"
-	// Create a mock RESTful service
+	token := "mocked token for gpt"
 	mockRestyService := &MockRestyService{
 		ResponseBody: []byte(`{"choices":[{"message":{"content":"Mock response"}}]}`),
 		Err:          nil,
 	}
 
-	// Create a ChatGPTService instance with the mock RESTful service
 	chatGPTService := NewChatGPTService(mockRestyService)
 
-	// Test case: Mock response received successfully
 	expectedAnswer := "Mock response"
 	message := "Test message"
 	answer, err := chatGPTService.GetAnswer(message, token)
-	if err != nil {
-		t.Errorf("GetAnswer returned error: %v", err)
-	}
-	if answer != expectedAnswer {
-		t.Errorf("GetAnswer returned %q, expected %q", answer, expectedAnswer)
-	}
+	assert.NoError(t, err, "GetAnswer returned an unexpected error")
+	assert.Equal(t, expectedAnswer, answer, "GetAnswer returned an unexpected answer")
 
-	// Test case: Error returned from mock service
 	mockRestyService.Err = fmt.Errorf("Mock error")
 	_, err = chatGPTService.GetAnswer(message, token)
-	if err == nil {
-		t.Error("Expected error, got nil")
-	}
+	assert.Error(t, err, "Expected an error from GetAnswer")
 }
