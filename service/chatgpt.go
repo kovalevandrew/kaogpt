@@ -4,13 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"kaogpt/config"
-
-	"github.com/go-resty/resty/v2"
 )
 
 type ChatGPTService struct {
 	apiEndpoint string
-	restyClient *resty.Client
+	restService RESTService
 }
 
 type GPTRequest struct {
@@ -36,10 +34,10 @@ type Message struct {
 	Content string `json:"content"`
 }
 
-func NewChatGPTService(restyClient *resty.Client) *ChatGPTService {
+func NewChatGPTService(restService RESTService) *ChatGPTService {
 	return &ChatGPTService{
 		apiEndpoint: "https://api.openai.com/v1/chat/completions",
-		restyClient: restyClient,
+		restService: restService,
 	}
 }
 
@@ -51,18 +49,13 @@ func (cs *ChatGPTService) GetAnswer(message string) (string, error) {
 		MaxTokens: 500,
 	}
 
-	response, err := cs.restyClient.R().
-		SetAuthToken(apiKey).
-		SetHeader("Content-Type", "application/json").
-		SetBody(requestBody).
-		Post(cs.apiEndpoint)
-
+	response, err := cs.restService.Post(cs.apiEndpoint, apiKey, requestBody)
 	if err != nil {
 		return "", fmt.Errorf("error while sending the request: %v", err)
 	}
 
 	var gptResponse GPTResponse
-	if err := json.Unmarshal(response.Body(), &gptResponse); err != nil {
+	if err := json.Unmarshal(response, &gptResponse); err != nil {
 		return "", fmt.Errorf("error decoding JSON response: %v", err)
 	}
 
