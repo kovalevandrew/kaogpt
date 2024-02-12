@@ -14,7 +14,7 @@ func main() {
 	edenaiService := service.NewEdenaiService(restService)
 	telegramService := service.NewTelegramService(chatGPTService, edenaiService)
 
-	telegramService.Start()
+	telegramService.StartBot()
 
 	// Run indefinitely
 	select {}

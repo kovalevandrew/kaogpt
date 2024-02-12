@@ -35,7 +35,7 @@ func NewTelegramBotClient() (*tgbotapi.BotAPI, error) {
 	return tgbotapi.NewBotAPI(tokens.Telegram)
 }
 
-func (t *TelegramService) Start() {
+func (t *TelegramService) StartBot() {
 	updates := t.bot.GetUpdatesChan(tgbotapi.NewUpdate(0))
 	for update := range updates {
 		if update.Message != nil && update.Message.Text == "/start" {
