@@ -8,12 +8,13 @@ import (
 
 func main() {
 	restyClient := resty.New()
+	restService := service.NewRestyService(restyClient)
 
-	chatGPTService := service.NewChatGPTService(restyClient)
-	edenaiService := service.NewEdenaiService(restyClient)
+	chatGPTService := service.NewChatGPTService(restService)
+	edenaiService := service.NewEdenaiService(restService)
 	telegramService := service.NewTelegramService(chatGPTService, edenaiService)
 
-	telegramService.Start()
+	telegramService.StartBot()
 
 	// Run indefinitely
 	select {}

@@ -3,15 +3,12 @@ package service
 import (
 	"encoding/json"
 	"fmt"
-	"kaogpt/config"
 	"strings"
-
-	"github.com/go-resty/resty/v2"
 )
 
 type EdenaiService struct {
 	endpoint    string
-	restyClient *resty.Client
+	restService RESTService
 }
 
 type ImageEdenai struct {
@@ -24,27 +21,22 @@ type ImageEdenai struct {
 	} `json:"replicate"`
 }
 
-func NewEdenaiService(restyClient *resty.Client) *EdenaiService {
+func NewEdenaiService(restService RESTService) *EdenaiService {
 	return &EdenaiService{
 		endpoint:    "https://api.edenai.run/v2/image/generation",
-		restyClient: restyClient,
+		restService: restService,
 	}
 }
 
-func (es *EdenaiService) GetAnswer(message string) (string, error) {
+func (es *EdenaiService) GetAnswer(message string, token string) (string, error) {
 	payload := strings.NewReader(fmt.Sprintf(`{"response_as_dict":true,"attributes_as_list":false,"show_original_response":false,"resolution":"1024x1024","num_images":1,"text":"%s","providers":"replicate"}`, message))
-	response, err := es.restyClient.R().
-		SetHeader("Content-Type", "application/json").
-		SetHeader("Authorization", "Bearer "+config.GetEdenaiToken()).
-		SetBody(payload).
-		Post(es.endpoint)
-
+	response, err := es.restService.Post(es.endpoint, token, payload)
 	if err != nil {
 		return "", fmt.Errorf("error sending request to Edenai API: %v", err)
 	}
 
 	var result ImageEdenai
-	if err := json.Unmarshal(response.Body(), &result); err != nil {
+	if err := json.Unmarshal(response, &result); err != nil {
 		return "", fmt.Errorf("error unmarshalling JSON response: %v", err)
 	}
 

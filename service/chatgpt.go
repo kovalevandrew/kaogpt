@@ -3,14 +3,11 @@ package service
 import (
 	"encoding/json"
 	"fmt"
-	"kaogpt/config"
-
-	"github.com/go-resty/resty/v2"
 )
 
 type ChatGPTService struct {
 	apiEndpoint string
-	restyClient *resty.Client
+	restService RESTService
 }
 
 type GPTRequest struct {
@@ -36,33 +33,27 @@ type Message struct {
 	Content string `json:"content"`
 }
 
-func NewChatGPTService(restyClient *resty.Client) *ChatGPTService {
+func NewChatGPTService(restService RESTService) *ChatGPTService {
 	return &ChatGPTService{
 		apiEndpoint: "https://api.openai.com/v1/chat/completions",
-		restyClient: restyClient,
+		restService: restService,
 	}
 }
 
-func (cs *ChatGPTService) GetAnswer(message string) (string, error) {
-	apiKey := config.GetGPTToken()
+func (cs *ChatGPTService) GetAnswer(message string, token string) (string, error) {
 	requestBody := GPTRequest{
 		Model:     "gpt-3.5-turbo",
 		Messages:  []MessageItem{{Role: "system", Content: message}},
 		MaxTokens: 500,
 	}
 
-	response, err := cs.restyClient.R().
-		SetAuthToken(apiKey).
-		SetHeader("Content-Type", "application/json").
-		SetBody(requestBody).
-		Post(cs.apiEndpoint)
-
+	response, err := cs.restService.Post(cs.apiEndpoint, token, requestBody)
 	if err != nil {
 		return "", fmt.Errorf("error while sending the request: %v", err)
 	}
 
 	var gptResponse GPTResponse
-	if err := json.Unmarshal(response.Body(), &gptResponse); err != nil {
+	if err := json.Unmarshal(response, &gptResponse); err != nil {
 		return "", fmt.Errorf("error decoding JSON response: %v", err)
 	}
 
